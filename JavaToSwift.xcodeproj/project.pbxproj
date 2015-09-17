@@ -6,10 +6,15 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXFileReference section */
+		4C7F07421BAB872600318487 /* File.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = File.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
 /* Begin PBXGroup section */
 		4C7F073B1BAB871C00318487 = {
 			isa = PBXGroup;
 			children = (
+				4C7F07421BAB872600318487 /* File.swift */,
 			);
 			sourceTree = "<group>";
 		};
