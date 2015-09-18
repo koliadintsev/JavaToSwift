@@ -32,9 +32,11 @@ class DataPacketConfiguration: NSXMLParserDelegate {
         //private static var mContext:Context! -> AlertView
         var queueItem:Bool = false
         var dataItem:Bool = false
+        var previousItem:String = ""
         var elementString:String!
         var id:Integer!
         private static var dpDetail: DataPacketDetail!
+        var itemAttributes:[NSObject : AnyObject]!
         
     }
     
@@ -50,19 +52,17 @@ class DataPacketConfiguration: NSXMLParserDelegate {
         var success:Bool = parser.parse()
         
         if success {
-            
-            //TODO if success
+            //if success
         } else {
-            println("parse fail")
-            //TODO change to DataPacketException class
+            DataPacketException("fail to load configuration")
         }
-        
         
     }
     
     func parser(parser: NSXMLParser!, didStartElement elementName: String!, namespaceURI: String!, qualifiedName qName: String!, attributes attributeDict: [NSObject : AnyObject]!)
     {
         elementString = elementName
+        itemAttributes = attributeDict
         if (elementName as NSString).isEqualToString("QueueDefault")
         {
             queueItem = true
@@ -70,13 +70,11 @@ class DataPacketConfiguration: NSXMLParserDelegate {
         } else if (elementName as NSString).isEqualToString("DataPacket") {
             dataItem = true
             id = attributeDict["id"]
-            
             dpDetail  = DataPacketDetail.alloc()
             dpDetail.msQueueName = attributeDict["queue"]
             dpDetail.msQueueAckClassName = attributeDict["queueAckClass"]
             dpDetail.bPersistent = attributeDict["persistent"] as? Bool
             dpDetail.compressed = attributeDict["compressed"]
-            
         }
     }
     
@@ -125,65 +123,47 @@ class DataPacketConfiguration: NSXMLParserDelegate {
                 }
             }
             queuesSet.append(dpDetail.msQueueName)
-            //Stop here
-            
             
             if elementString.isEqualToString("class"){
                 dpDetail.msClassName.append(string)
-            } else if elementString.isEqualToString("tx") {
-                
+            } else if elementString.isEqualToString("tx"){
+                dpDetail.bTxChk = itemAttributes["chk"] as Bool
+            }
+            if (previousItem = "rx") {
+                if (elementString.isEqualToString("get")) {
+                    dpDetail.miRxGet = itemAttributes["size"] as Int
+                    dpDetail.bRxGetDyn = itemAttributes["dyn"] as Bool
+                } else if (elementString.isEqualToString("set")) {
+                    dpDetail.miRxSet = itemAttributes["size"] as Int
+                    dpDetail.bRxSetDyn = itemAttributes["dyn"] as Bool
+                } else if (elementString.isEqualToString("status")) {
+                    dpDetail.miRxStatus = itemAttributes["size"] as Int
+                    dpDetail.bRxStatusDyn = itemAttributes["dyn"] as Bool
+                }
+            } else if (previousItem = "tx") {
+                if (elementString.isEqualToString("get")) {
+                    dpDetail.miTxGet = itemAttributes["size"] as Int
+                    dpDetail.bTxGetDyn = itemAttributes["dyn"] as Bool
+                } else if (elementString.isEqualToString("set")) {
+                    dpDetail.miTxSet = itemAttributes["size"] as Int
+                    dpDetail.bTxSetDyn = itemAttributes["dyn"] as Bool
+                }  else if (elementString.isEqualToString("status")) {
+                    dpDetail.miTxStatus = itemAttributes["size"] as Int
+                    dpDetail.bTxStatusDyn = itemAttributes["dyn"] as Bool
+                }
             }
         }
-    }
-    /*
-    var operation : Element = item.getChild("rx");
-    if ( operation != nil ) {
-    type = operation.getChild("get");
-    if ( type != nil ) {
-    dpDetail.miRxGet = Integer.parseInt( type.getAttributeValue("size") );
-    dpDetail.bRxGetDyn = Boolean.parseBoolean( type.getAttributeValue("dyn") );
+        previousItem = elementString
     }
     
-    type = operation.getChild("set");
-    if ( type != nil ) {
-    dpDetail.miRxSet = Integer.parseInt( type.getAttributeValue("size") );
-    dpDetail.bRxSetDyn = Boolean.parseBoolean( type.getAttributeValue("dyn") );
+    func parser(parser: NSXMLParser!, didEndElement elementName: String!, namespaceURI: String!, qualifiedName qName: String!)
+    {
+        if (elementName as NSString).isEqualToString("DataPacket") {
+            dataPacketList.updateValue(id, dpDetail)
+            dpDetail = DataPacketDetail.alloc()
+        }
     }
     
-    type = operation.getChild("status");
-    if ( type != nil ) {
-    dpDetail.miRxStatus = Integer.parseInt( type.getAttributeValue("size") );
-    dpDetail.bRxStatusDyn = Boolean.parseBoolean( type.getAttributeValue("dyn") );
-    }
-    }
-    
-    operation = item.getChild("tx");
-    if ( operation != nil ) {
-    dpDetail.bTxChk = Boolean.parseBoolean( operation.getAttributeValue("chk") );
-    type = operation.getChild("get");
-    
-    if ( type != nil ) {
-    dpDetail.miTxGet = Integer.parseInt( type.getAttributeValue("size") );
-    dpDetail.bTxGetDyn = Boolean.parseBoolean( type.getAttributeValue("dyn") );
-    }
-    
-    type = operation.getChild("set");
-    if ( type != nil ) {
-    dpDetail.miTxSet = Integer.parseInt( type.getAttributeValue("size") );
-    dpDetail.bTxSetDyn = Boolean.parseBoolean( type.getAttributeValue("dyn") );
-    }
-    
-    type = operation.getChild("status");
-    if ( type != nil ) {
-    dpDetail.miTxStatus = Integer.parseInt( type.getAttributeValue("size") );
-    dpDetail.bTxStatusDyn = Boolean.parseBoolean( type.getAttributeValue("dyn") );
-    }
-    }
-    dataPacketList.put(id, dpDetail);
-    }
-    }
-    }
-    */
     /**
     * Factory method
     * @return DataPacketConfiguration
@@ -193,7 +173,6 @@ class DataPacketConfiguration: NSXMLParserDelegate {
         if DataPacketConfigurationStruct.myConfiguration == nil {
             DataPacketConfigurationStruct.myConfiguration = self.DataPacketConfiguration()
         }
-        
         return DataPacketConfigurationStruct.myConfiguration
     }
     
@@ -203,10 +182,11 @@ class DataPacketConfiguration: NSXMLParserDelegate {
     * @param id ID required
     * @return DataPacketDetail
     */
-    /*
+    
     func getIdDetail(id: Int) -> DataPacketDetail {
-    var dataPackegeList = DataPacketConfigurationStruct.dataPacketList.values
-    return DataPacketConfigurationStruct.dataPacketList.values;
+//    var dataPackegeList = DataPacketConfigurationStruct.dataPacketList.values
+//    return DataPacketConfigurationStruct.dataPacketList.values;
+        return dataPacketList.get(id)
     }
     
     /**
@@ -224,10 +204,9 @@ class DataPacketConfiguration: NSXMLParserDelegate {
     /**
     * Gets the list of different queues where to send DataPacket received
     */
-    func getQueues ( ) -> [] {
-    return DataPacketConfigurationStruct.queuesSet.toArray()
+    func getQueues ( ) -> [NSObject] {
+    return DataPacketConfigurationStruct.queuesSet.toArray() //check function name
     }
-    */
     
     /**
     * Gets the file name of the datapacket configuration file loaded or to load
@@ -244,7 +223,7 @@ class DataPacketConfiguration: NSXMLParserDelegate {
     * @see DataPacketConfiguration#getDataPacketConfiguration()
     */
     func setFileName (lsFileName: String?) {
-        if var name = lsFileName as String? {
+        if name = lsFileName as String? {
             DataPacketConfigurationStruct.sFileName = name
         }
         DataPacketConfigurationStruct.sFileName = "DP_CONFIGURATION_FILE_NAME_DEFAULT"
@@ -282,8 +261,8 @@ class DataPacketConfiguration: NSXMLParserDelegate {
     * @throws DataPacketException
     */
     func getTopicDefaultTx () -> String? {
-        if var sTopicDefaultTx = DataPacketConfigurationStruct.sTopicDefaultTx {
-            if var sPrefix = DataPacketConfigurationStruct.sPrefix {
+        if sTopicDefaultTx = DataPacketConfigurationStruct.sTopicDefaultTx {
+            if sPrefix = DataPacketConfigurationStruct.sPrefix {
                 return "\(sPrefix).\(sTopicDefaultTx)"
             }
             return sTopicDefaultTx
