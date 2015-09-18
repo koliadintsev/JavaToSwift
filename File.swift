@@ -45,6 +45,7 @@ class DataPacketConfiguration: NSXMLParserDelegate {
     func initObject() {
         let url: NSURL! = NSBundle.mainBundle().URLForResource(DP_CONFIGURATION_FILE_NAME_DEFAULT, withExtension: "xml")
         var parser = NSXMLParser(contentsOfURL: url)
+        
         parser.delegate = self
         var success:Bool = parser.parse()
         
@@ -102,40 +103,39 @@ class DataPacketConfiguration: NSXMLParserDelegate {
             if (sQueueDefaultRx == nil) {
                 DataPacketException("Queue default Rx has not been defined")
             }
+            if (dpDetail.msQueueName != nil) {
+                if (dpDetail.msQueueAckClassName != nil) {
+                    var setQueueName : Set<String> = nil
+                    if ((setQueueName = queueConfigurations["dpDetail.msQueueAckClassName"]) == nil){
+                        setQueueName = Set<String>.alloc()
+                    }
+                    if (sPrefix != nil) {
+                        dpDetail.msQueueName = sPrefix + "." + dpDetail.msQueueName
+                    } else {
+                        dpDetail.msQueueName = dpDetail.msQueueName //???
+                    }
+                    setQueueName.insert(dpDetail.msQueueName)
+                    queueConfigurations.updateValue(dpDetail.msQueueAckClassName,setQueueName)
+                }
+            } else {
+                if (sPrefix != nil) {
+                    dpDetail.msQueueName = sPrefix + "." + sQueueDefaultRx
+                }else {
+                    dpDetail.msQueueName = sQueueDefaultRx
+                }
+            }
+            queuesSet.append(dpDetail.msQueueName)
+            //Stop here
+            
+            
             if elementString.isEqualToString("class"){
                 dpDetail.msClassName.append(string)
             } else if elementString.isEqualToString("tx") {
-                sTopicDefaultTx += string
+                
             }
         }
     }
     /*
-    if ( dpDetail.msQueueName != nil ) {
-    if ( dpDetail.msQueueAckClassName != nil ) {
-    var setQueueName : Set<String> = nil;
-    if ( (setQueueName = queueConfigurations.get(dpDetail.msQueueAckClassName)) == nil ) {
-    setQueueName = Set<String>();
-    }
-    if ( sPrefix != nil ) {
-    dpDetail.msQueueName = sPrefix + '.' + dpDetail.msQueueName;
-    } else {
-    dpDetail.msQueueName = dpDetail.msQueueName;
-    }
-    setQueueName.add(dpDetail.msQueueName);
-    queueConfigurations.put(dpDetail.msQueueAckClassName,setQueueName);
-    }
-    } else {
-    // insert default queue name, if not configured
-    if ( sPrefix != nil ) {
-    dpDetail.msQueueName = sPrefix + '.' + sQueueDefaultRx;
-    }else {
-    dpDetail.msQueueName = sQueueDefaultRx;
-    }
-    
-    }
-    
-    queuesSet.add(dpDetail.msQueueName);
-    
     var operation : Element = item.getChild("rx");
     if ( operation != nil ) {
     type = operation.getChild("get");
